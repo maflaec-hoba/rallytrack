@@ -41,6 +41,7 @@ Three layers, strictly separated:
 | `/tours/[id]` | Closed tour detail: summary, route line, itinerary, export (F1, F9) |
 | `/profiles` | Car profiles & calibration (F4) |
 | `/settings` | Storage usage, persistence, app info (F8) |
+| `/install` | Install-by-link page: QR + link + platform install flow (FR-8.5) |
 
 All screens are client components (`'use client'`); no server data fetching
 in v1.
@@ -92,8 +93,15 @@ only at the UI edge (GWT-26).
   (`src/components/tour-provider.tsx`); each kept point dispatches to state
   and appends to the write-behind batch. Elapsed time always derives from
   `startedAt` vs now, never from an accumulating timer (FR-2.7, GWT-10).
-- Wake Lock service reacquires on `visibilitychange` (FR-2.6); missing API
-  (older iOS) → visible notice, no crash (NFR-3).
+- Wake Lock lives in its own service with reference counting: any running
+  measurement (active tour OR running stopwatch) holds it; released when the
+  last one stops (FR-2.6, FR-6.5, GWT-39). Reacquired on `visibilitychange`;
+  missing API (older iOS) → visible notice, no crash (NFR-3).
+- Swipe-away resilience (FR-2.8): tour state + point batch flushed on
+  `pagehide`/`visibilitychange: hidden`; on app start, a persisted active
+  tour auto-resumes the geolocation watcher with no confirmation
+  (GWT-37/38/41). QR code for `/install` is generated locally (tiny
+  dependency-free QR routine or inline SVG generator — no network, C1).
 
 ### Trip counter & calibration
 

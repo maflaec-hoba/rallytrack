@@ -68,6 +68,18 @@ When the app is reloaded and storage is re-read
 Then the same tour is restored as active with its distance and start time
 intact, and elapsed time is computed from the original start timestamp.
 
+**GWT-37 (component)** — state is flushed when the app is swiped away
+Given an active tour with unflushed points in the write-behind batch
+When a `pagehide` (or `visibilitychange` to hidden) event fires
+Then the batch and the tour state are written to storage before the event
+handler returns.
+
+**GWT-38 (component)** — auto-resume without user action
+Given a persisted active tour
+When the app is (re)opened
+Then tracking resumes automatically — the tour is active, the geolocation
+watcher is started and no confirmation is asked (FR-1.2, FR-2.8).
+
 **GWT-11 (component)** — closing a tour
 Given an active tour with distance 12 340 m, a calibration factor 1.02 and an
 attached itinerary
@@ -158,6 +170,13 @@ Given a stopped stopwatch showing a nonzero value with laps
 When reset is pressed
 Then the display is `00:00.00` and the lap list is empty.
 
+**GWT-39 (component)** — wake lock follows running measurements
+Given a mocked Wake Lock API
+When a tour starts, then a stopwatch starts, then the tour is closed, then
+the stopwatch is stopped
+Then the wake lock is acquired at tour start and only released after the
+stopwatch stops (held while ANY measurement runs — FR-2.6, FR-6.5).
+
 ## Formatting (C7)
 
 **GWT-26 (unit)** — formats
@@ -218,6 +237,20 @@ Given the app was loaded once and then the device is in airplane mode
 When the installed app is launched
 Then the home screen renders (no browser offline error) and history is
 readable.
+
+**GWT-40 (manual)** — install by link from the web version
+Given the deployed app open on a desktop browser
+When the user opens the `/install` page
+Then a QR code and a copyable link are shown; scanning the QR on a phone
+opens the same page with that platform's install flow (Android: install
+prompt button; iOS: "Add to Home Screen" steps), and completing it puts the
+app on the home screen.
+
+**GWT-41 (manual)** — swiped-away measurement survives on a device
+Given a running tour on a phone
+When the user swipes the app away and reopens it
+Then the tour is running again by itself, elapsed time is correct, and at
+most ~5 s of distance is missing.
 
 **GWT-35 (manual)** — tracking without network
 Given airplane mode with GPS enabled

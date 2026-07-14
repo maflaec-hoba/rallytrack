@@ -7,7 +7,8 @@ task's "Done when" points at the binding GWT scenarios (see
 
 Linear mapping (project [rallytrack](https://linear.app/insiron/project/rallytrack-b66207541f2b)):
 T1=INS-6, T2=INS-7, T3=INS-8, T4=INS-9, T5=INS-12, T6=INS-13, T7=INS-14,
-T8=INS-15, T9=INS-10, T10=INS-16, T11=INS-11, T12=INS-17, T13=INS-18.
+T8=INS-15, T9=INS-10, T10=INS-16, T11=INS-11, T12=INS-17, T13=INS-18,
+T14=INS-19, T15=INS-20, T16=INS-21, T17=INS-22.
 Spec approval anchor: INS-5 (blocks T1–T3).
 
 Dependency graph:
@@ -57,9 +58,10 @@ green as unit tests.
 **Depends on:** T2
 
 ### T5 — Tour lifecycle + live dashboard
-Tour provider (start/close/restore), geolocation + wake-lock services,
-`/tour` dashboard with live distance / elapsed / current & average speed.
-**Spec:** FR-1.1–FR-1.3, FR-2.1, FR-2.4, FR-2.6, FR-2.7, NFR-2, NFR-3 ·
+Tour provider (start/close/restore), geolocation service, `/tour` dashboard
+with live distance / elapsed / current & average speed. (Wake lock: T17;
+swipe-away flush & auto-resume: T16.)
+**Spec:** FR-1.1–FR-1.3, FR-2.1, FR-2.4, FR-2.7, NFR-2, NFR-3 ·
 **Done when:** GWT-8–11 green; GWT-35 manual check done.
 **Depends on:** T1, T3, T4
 
@@ -112,6 +114,39 @@ summary on tour detail.
 **Spec:** FR-9.1–FR-9.4 · **Done when:** GWT-27, GWT-28 green; GWT-29
 manual check done.
 **Depends on:** T6
+
+## Additions (2026-07-14, after spec approval)
+
+### T14 — Design refresh: light, youthful theme *(guideline change — done 2026-07-14)*
+Decision: the app is light-themed (never dark backgrounds), relaxed and
+youthful — `DESIGN-GUIDELINE.md` Brand/Colors/Layout/Don'ts rewritten
+accordingly (zinc-50/white surfaces, orange-500 accent, rounded-2xl/pill
+geometry). No code existed yet; T3/T10 apply the updated tokens.
+**Spec:** DESIGN-GUIDELINE.md, C5 · **Depends on:** —
+
+### T16 — Swipe-away resilience: flush + auto-resume *(milestone M2)*
+Flush tour state and point batch on `pagehide`/`visibilitychange: hidden`;
+persisted active tour auto-resumes tracking on app start without
+confirmation.
+**Spec:** FR-1.2, FR-2.8 · **Done when:** GWT-37, GWT-38 green; GWT-41
+manual check done.
+**Depends on:** T5
+
+### T17 — Wake lock while any measurement runs *(milestone M3)*
+Reference-counted wake lock service: held while a tour is active or a
+stopwatch is running; reacquire on visibility change; visible notice when
+the API is unavailable.
+**Spec:** FR-2.6, FR-6.5, NFR-3 · **Done when:** GWT-39 green; screen
+stays on during a real tour (part of GWT-35).
+**Depends on:** T5, T9
+
+### T15 — Install-by-link page (`/install`) *(milestone M1)*
+QR code (locally generated) + copyable link + platform-specific install
+flow: `beforeinstallprompt` button on Android Chrome, "Add to Home Screen"
+steps on iOS Safari.
+**Spec:** FR-8.5 · **Done when:** GWT-40 manual check done on both
+platforms.
+**Depends on:** T1, T3
 
 ## M5 — Sync (stretch)
 

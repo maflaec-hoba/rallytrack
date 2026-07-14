@@ -9,21 +9,26 @@ is still a section: it tells the agent that the decision is still open.
 
 ## Brand & tone
 
-Instrument-panel character: purposeful, calm, high-contrast — a digital rally
-tripmaster for veteran-car crews, not a playful consumer app. Data first:
-big numerals, minimal chrome, no decoration that competes with readings.
-UI copy is Hungarian, short and imperative ("Túra indítása", "Trip nullázás").
+Relaxed and youthful, but data-first: a friendly digital rally tripmaster,
+not a corporate dashboard and not a dark cockpit. Light, airy surfaces,
+generous whitespace, rounded shapes, one warm accent — while readings stay
+big, precise and glanceable (numbers are the heroes). UI copy is Hungarian,
+short and friendly-imperative ("Túra indítása", "Trip nullázás").
 
 ## Colors
 
-- Base: `zinc` scale — app background `bg-zinc-950` (dark is the primary
-  theme; in-car use), surfaces `bg-zinc-900`, borders `border-zinc-800`,
-  body text `text-zinc-100`, secondary text `text-zinc-400`.
-- Primary accent: `amber-400` (rally-plate amber) for primary actions and
-  active states — `bg-amber-400 text-zinc-950` on buttons.
+- **Light theme only — never a dark app background.**
+- Base: app background `bg-zinc-50`, cards/surfaces `bg-white` with
+  `border-zinc-200` and soft shadows (`shadow-sm`), body text
+  `text-zinc-900`, secondary text `text-zinc-500`.
+- Primary accent: `orange-500` (warm, energetic) for primary actions and
+  active states — `bg-orange-500 text-white` on buttons, `text-orange-600`
+  for active nav items and highlights.
 - Recording/live indicator: `emerald-500`. Destructive/stop: `red-600`.
-- Navigator view is stricter: pure `bg-black` with `text-zinc-50` numerals;
-  accent use minimal; everything ≥ WCAG AA (aim AAA for primary numerals).
+- Navigator view stays light but stricter: `bg-white` with near-black
+  (`text-zinc-900`) oversized numerals, minimal accent use; everything
+  ≥ WCAG AA (aim AAA for primary numerals — dark-on-light reads best in
+  daylight glare).
 
 ## Typography
 
@@ -38,6 +43,8 @@ UI copy is Hungarian, short and imperative ("Túra indítása", "Trip nullázás
 
 - Mobile-first, single column, `max-w-md mx-auto`, page padding `px-4`,
   vertical rhythm in Tailwind steps of 4 (`gap-4`, `py-4`, sections `py-6`).
+- Friendly geometry: cards `rounded-2xl`, buttons pill-shaped
+  (`rounded-full`) — no sharp, boxy chrome.
 - Fixed bottom navigation on app screens; content never hidden behind it
   (safe-area padding included).
 - Touch targets ≥ 48×48 px (`h-12` minimum) — in-motion controls (trip
@@ -59,7 +66,8 @@ UI copy is Hungarian, short and imperative ("Túra indítása", "Trip nullázás
 
 - No inline styles, no new UI libraries, no custom CSS files beyond
   `globals.css` — Tailwind utilities + shadcn only.
-- No light-on-light or low-contrast text; never below WCAG AA.
+- No dark app backgrounds — the theme is light (see Colors); no
+  light-on-light or low-contrast text either; never below WCAG AA.
 - No map/tile services or external fonts/CDNs — the app must render fully
   offline (constitution C1).
 - Don't shrink touch targets below 48 px or move primary actions to the top

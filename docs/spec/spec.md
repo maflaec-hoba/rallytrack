@@ -37,7 +37,9 @@ Source concept: `docs/RallyTrack_Concept.md`. Principles: `constitution.md`.
 - **FR-1.1** The user can start a new tour with one action from the home
   screen. An optional name defaults to date + time (e.g. `Túra 2026-07-14 09:30`).
 - **FR-1.2** At most one tour is active at a time. An active tour survives
-  app restarts and phone reboots: on relaunch the app offers to continue it.
+  app restarts and phone reboots: on relaunch the app automatically resumes
+  it — tracking restarts without any user action, elapsed time stays correct
+  (derived from the original start timestamp).
 - **FR-1.3** The user can close the active tour. Closing stores: name, start
   and end timestamps, total distance (GPS and calibrated), duration, average
   speed, the recorded route, the trip-counter log, the calibration used, and
@@ -70,6 +72,11 @@ Source concept: `docs/RallyTrack_Concept.md`. Principles: `constitution.md`.
 - **FR-2.7** Recording continues while the app is in the foreground; if the
   OS suspends tracking in the background, elapsed time stays correct and
   distance resumes from the next kept point (no fabricated segments).
+- **FR-2.8** Swiping the app away (or any OS-initiated kill) during an
+  active tour must not lose the measurement: all tour state is flushed to
+  storage at the latest on `visibilitychange`/`pagehide`, so at most the
+  points since the last flush (≤ 5 s) are lost; on reopening, the tour
+  auto-resumes per FR-1.2.
 
 ## F3 — Trip counter
 
@@ -127,6 +134,9 @@ Source concept: `docs/RallyTrack_Concept.md`. Principles: `constitution.md`.
 - **FR-6.4** The stopwatch works independently of tours (usable with or
   without an active tour) and keeps running while the user navigates within
   the app.
+- **FR-6.5** While the stopwatch is running, the screen is kept awake, the
+  same way as during tracking (FR-2.6): a running measurement — tour or
+  stopwatch — means an active wake lock.
 
 ## F7 — Navigator view
 
@@ -152,6 +162,12 @@ Source concept: `docs/RallyTrack_Concept.md`. Principles: `constitution.md`.
   requests persistent storage to reduce eviction risk.
 - **FR-8.4** Storage usage is shown in settings; when the itinerary store
   grows beyond quota, the user is warned and can delete old tours/itineraries.
+- **FR-8.5** The web version offers a link-based path to the phone: an
+  `/install` page shows the app's URL as a QR code and copyable link, plus
+  platform-specific install steps (Android Chrome install prompt via
+  `beforeinstallprompt`, iOS Safari "Add to Home Screen" instructions).
+  Opening the link on a phone lands on the same page with the right
+  platform's flow highlighted.
 
 ## F9 — Export
 
