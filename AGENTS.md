@@ -39,9 +39,10 @@ Starter for a small website built with AI-assisted development
    and merges into its milestone branch via PR: green CI + independent-review
    findings resolved. Milestone → `main` merge requires human approval.
 9. Independent review (RUG): every task PR is reviewed by the other harness
-   (Codex) per `docs/review-checklist.md` before merge. The reviewer only
-   produces findings; fixes are the maker's, and each finding is marked
-   accepted or rejected in the PR before merging.
+   (Codex) per `docs/review-checklist.md` before merge. The reviewer produces
+   findings and a verdict (APPROVE / REQUEST CHANGES) — never code changes;
+   fixes are the maker's, and each finding is marked accepted or rejected in
+   the PR before merging.
 
 > This file grows during the workshop — every recurring correction you give
 > the agent belongs here as a rule.

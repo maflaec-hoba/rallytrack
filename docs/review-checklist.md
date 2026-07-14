@@ -10,12 +10,14 @@ maker, producing a fix SHA, then the changed parts are re-reviewed.
 The reviewer reads, in this order:
 
 1. `AGENTS.md` — repo rules (Codex picks this up automatically)
-2. The Linear task referenced by the PR title/branch — the approved scope
-3. `docs/spec/spec.md` + `docs/spec/given-when-then.md` — the FRs and GWT
+2. `docs/spec/constitution.md` — the ten non-negotiable principles; every
+   change must comply with all of them
+3. The Linear task referenced by the PR title/branch — the approved scope
+4. `docs/spec/spec.md` + `docs/spec/given-when-then.md` — the FRs and GWT
    scenarios the task claims to implement
-4. `docs/spec/plan.md` — architecture boundaries and justified dependencies
-5. `DESIGN-GUIDELINE.md` — if the diff touches UI
-6. The full PR diff
+5. `docs/spec/plan.md` — architecture boundaries and justified dependencies
+6. `DESIGN-GUIDELINE.md` — if the diff touches UI
+7. The full PR diff
 
 ## Checks
 
@@ -52,14 +54,25 @@ The reviewer reads, in this order:
 - [ ] Units convention: metres and epoch ms in the domain layer; formatting
   only at the UI edge.
 
-### 5. Constitution risks
+### 5. Constitution (C1–C10 — check every principle the diff touches)
 
 - [ ] Offline-first (C1/C2): nothing requires network at time of use; data
   is written locally first; no external fonts/CDNs/tiles.
 - [ ] Data-loss paths: state that must survive swipe-away/restart is
   persisted (flush on `pagehide`, restore on start).
+- [ ] PWA integrity (C3): installability, standalone mode and the service
+  worker keep working (no cache-strategy or manifest regressions).
 - [ ] In-motion safety (C5): touch targets ≥ 48 px, readable numerals,
   WCAG AA contrast, light theme (never dark backgrounds).
+- [ ] Units & formats (C7): km / km/h / `hh:mm:ss` / `mm:ss.cc`, tabular
+  figures on numeric readouts.
+- [ ] Data ownership & privacy (C8): no analytics or user tracking; location
+  data never leaves the device except user-triggered sync; exports need no
+  account.
+- [ ] Language (C9): English code/comments/commits/spec, Hungarian UI copy.
+- [ ] Spec before code (C10): any behavior not in the spec arrived via a
+  spec change in the same or an earlier PR, not silently in code.
+- [ ] Anything else in `constitution.md` that the diff plausibly affects.
 
 ### 6. Gates (verify, don't trust)
 
