@@ -9,27 +9,63 @@ is still a section: it tells the agent that the decision is still open.
 
 ## Brand & tone
 
-<!-- What is the site's mood? (e.g. playful / professional / minimalist) -->
+Instrument-panel character: purposeful, calm, high-contrast — a digital rally
+tripmaster for veteran-car crews, not a playful consumer app. Data first:
+big numerals, minimal chrome, no decoration that competes with readings.
+UI copy is Hungarian, short and imperative ("Túra indítása", "Trip nullázás").
 
 ## Colors
 
-<!-- Primary / secondary colors. Use Tailwind tokens, e.g. `bg-emerald-600`. -->
+- Base: `zinc` scale — app background `bg-zinc-950` (dark is the primary
+  theme; in-car use), surfaces `bg-zinc-900`, borders `border-zinc-800`,
+  body text `text-zinc-100`, secondary text `text-zinc-400`.
+- Primary accent: `amber-400` (rally-plate amber) for primary actions and
+  active states — `bg-amber-400 text-zinc-950` on buttons.
+- Recording/live indicator: `emerald-500`. Destructive/stop: `red-600`.
+- Navigator view is stricter: pure `bg-black` with `text-zinc-50` numerals;
+  accent use minimal; everything ≥ WCAG AA (aim AAA for primary numerals).
 
 ## Typography
 
-<!-- Font families and the size scale. Default: Geist (already wired up in the layout). -->
+- UI text: Geist Sans (already wired in the layout).
+- All numeric readouts (distance, time, speed): Geist Mono with
+  `tabular-nums` so digits never jump while counting.
+- Scale: readouts `text-5xl`–`text-7xl` (navigator view may go larger),
+  screen titles `text-lg font-semibold`, labels above readouts
+  `text-xs uppercase tracking-wide text-zinc-400`, body `text-sm`/`text-base`.
 
 ## Layout & spacing
 
-<!-- Max width, spacing rhythm, mobile-first rules. -->
+- Mobile-first, single column, `max-w-md mx-auto`, page padding `px-4`,
+  vertical rhythm in Tailwind steps of 4 (`gap-4`, `py-4`, sections `py-6`).
+- Fixed bottom navigation on app screens; content never hidden behind it
+  (safe-area padding included).
+- Touch targets ≥ 48×48 px (`h-12` minimum) — in-motion controls (trip
+  reset, corrections, stopwatch) larger: `h-14`+ full/half width.
+- One primary action per screen, placed in the thumb zone (bottom half).
 
 ## Components
 
-<!-- Which shadcn component is used for what; rules for custom variants. -->
+- Buttons and cards come from `src/components/ui/` (Button, Card); add
+  further shadcn components via `npx shadcn@latest add <component>` as
+  needed (expected: `tabs`, `dialog`, `input`, `label`, `badge`, `alert`).
+- Metric readout (label + big mono value + unit) is the app's own reusable
+  component — build it once in `src/components/` and use it everywhere
+  (dashboard, trip counter, navigator, tour detail).
+- Dialogs only for confirmation (delete tour) and short forms (calibration,
+  profile); never for content that is used while driving.
 
 ## Don'ts
 
-<!-- What the agent must NEVER do in the UI (e.g. inline styles, new UI libraries). -->
+- No inline styles, no new UI libraries, no custom CSS files beyond
+  `globals.css` — Tailwind utilities + shadcn only.
+- No light-on-light or low-contrast text; never below WCAG AA.
+- No map/tile services or external fonts/CDNs — the app must render fully
+  offline (constitution C1).
+- Don't shrink touch targets below 48 px or move primary actions to the top
+  of the screen.
+- Don't use proportional figures for numeric readouts (always tabular mono).
+- Don't invent colors outside the tokens above.
 
 ---
 
