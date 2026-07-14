@@ -223,6 +223,14 @@ export function createPointBatcher(options: PointBatcherOptions = {}): PointBatc
     timer = null;
   }
 
+  function scheduleFlush(): void {
+    if (timer !== null) return;
+    timer = scheduler.setTimeout(() => {
+      timer = null;
+      void flushNow().catch(() => undefined);
+    }, maxDelayMs);
+  }
+
   function flushNow(): Promise<void> {
     clearTimer();
     if (buffer.length === 0) return tail;
@@ -230,8 +238,11 @@ export function createPointBatcher(options: PointBatcherOptions = {}): PointBatc
     buffer = [];
     const attempt = tail.then(() =>
       write(batch).catch((error: unknown) => {
-        // Keep failed points at the front of the buffer — never drop data (C2).
+        // Keep failed points at the front of the buffer and re-arm the
+        // timer, so a transient failure is retried even when no further
+        // point ever arrives — never drop data (C2, NFR-1).
         buffer = [...batch, ...buffer];
+        scheduleFlush();
         throw error;
       }),
     );
@@ -246,11 +257,8 @@ export function createPointBatcher(options: PointBatcherOptions = {}): PointBatc
       buffer.push(point);
       if (buffer.length >= maxBatchSize) {
         void flushNow().catch(() => undefined);
-      } else if (timer === null) {
-        timer = scheduler.setTimeout(() => {
-          timer = null;
-          void flushNow().catch(() => undefined);
-        }, maxDelayMs);
+      } else {
+        scheduleFlush();
       }
     },
     flush(): Promise<void> {

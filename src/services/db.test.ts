@@ -323,6 +323,42 @@ describe("batched point writes (NFR-1: 20 points / 5 s)", () => {
     expect(batcher.pendingCount).toBe(0);
   });
 
+  it("schedules a retry after a failed timer flush so points persist without new input", async () => {
+    const writes: TrackPoint[][] = [];
+    let failuresLeft = 1;
+    const scheduler = createManualScheduler();
+    const batcher = createPointBatcher({
+      write: async (points) => {
+        if (failuresLeft > 0) {
+          failuresLeft--;
+          throw new Error("transient");
+        }
+        writes.push(points);
+      },
+      scheduler,
+    });
+    const drainMicrotasks = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+    batcher.add(makePoint("t1", 1));
+    expect(scheduler.pending).toHaveLength(1);
+
+    // The 5 s timer flush fails transiently; no further point ever arrives.
+    scheduler.fireAll();
+    await drainMicrotasks();
+    expect(writes).toHaveLength(0);
+    expect(batcher.pendingCount).toBe(1);
+
+    // A retry must be scheduled — persistence may not depend on future input.
+    expect(scheduler.pending).toHaveLength(1);
+    expect(scheduler.pending[0].delayMs).toBe(5000);
+
+    scheduler.fireAll();
+    await drainMicrotasks();
+    expect(writes).toEqual([[makePoint("t1", 1)]]);
+    expect(batcher.pendingCount).toBe(0);
+    expect(scheduler.pending).toHaveLength(0);
+  });
+
   it("defaults write to the points store", async () => {
     const scheduler = createManualScheduler();
     const batcher = createPointBatcher({ scheduler });

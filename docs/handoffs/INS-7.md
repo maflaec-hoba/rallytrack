@@ -81,3 +81,28 @@
 - `cd <worktree> && npm install`
 - `npm run typecheck && npm run lint && npm run test && npm run build`
 - Focused suite: `npx vitest run src/services/db.test.ts`
+
+## Fix round 1
+
+Reviewer verdict: REQUEST CHANGES, 1 finding.
+
+- **[MAJOR] `src/services/db.ts` — failed automatic batch write requeues
+  points but schedules no retry** → **Accepted.** A transiently failing 5 s
+  timer flush left the batch in memory until the next `add()`/`flush()`; if
+  no further point arrived, killing the app lost the batch (violates the 5 s
+  guarantee, NFR-1, and C2).
+  - Fix (TDD, red first): new test "schedules a retry after a failed timer
+    flush so points persist without new input" — timer flush fails once, no
+    new point arrives, a retry must be scheduled and must persist the batch.
+  - Change: extracted `scheduleFlush()` (single timer, re-armed at
+    `maxDelayMs`) and call it from the write-failure path after re-queueing
+    the batch. Every failed flush — timer or manual — now re-arms the timer,
+    giving a simple fixed 5 s retry cadence (no backoff: one point per
+    interval at most, and rule 3 says keep it simple).
+  - Gates after fix: typecheck 0 · lint 0 · test 0 (21 passed, 37 todo) ·
+    build 0.
+- Superseded risk note above ("A batch that fails repeatedly stays in memory
+  until a later flush succeeds"): retries are now self-scheduling; the batch
+  still lives in memory between attempts, but persistence no longer depends
+  on future input. Surfacing persistent failures to the user remains a UI
+  task.
