@@ -45,3 +45,30 @@
 - `cd C:/Work/ai-workshop/worktrees/ins-8 && npm install`
 - `npm run typecheck && npm run lint && npm run test && npm run build`
 - `npx next start -p 3111` then open `http://localhost:3111/` on a phone-sized viewport: bottom nav on all screens, active tab orange, "Túra indítása" pill navigates to `/tour`; visit all 8 routes (e.g. `/tours/abc123`).
+
+## Fix round 1
+
+Reviewer verdict: REQUEST CHANGES (3 findings). All three accepted.
+
+- **MAJOR-1 (accepted)** — home screen had no continue-active-tour entry.
+  Fixed with a pure decision helper `getHomeEntry(activeTour: ActiveTourSummary | null)`
+  in the new `src/lib/home.ts`: it returns the start variant ("Nincs aktív
+  túra" / "Túra indítása") for `null` and the continue variant (tour name /
+  "Aktív túra folytatása") for an active tour; both target `/tour`.
+  `src/app/page.tsx` renders entirely from this model. The active-tour source
+  is a currently-`null` placeholder with an explicit `TODO(T5/INS-12)` wiring
+  point — no persistence invented (per fix-round guidance, the AC asks for
+  the UI entry, not tracking logic).
+- **MAJOR-2 (accepted)** — suite could not catch a broken home screen.
+  Added `src/lib/home.test.ts` (written first, red → green): 5 tests pin the
+  start variant, the continue variant, their mutual exclusivity, and that the
+  quick links (now the exported `HOME_QUICK_LINKS` the page renders) point at
+  `/tours`, `/profiles`, `/settings` with non-empty Hungarian labels. Pure
+  helpers over DOM rendering — node test env kept, no new test libraries (C4).
+- **MINOR-1 (accepted)** — plan.md requires all v1 screens to be client
+  components. Added `"use client"` to all eight screen pages;
+  `/tours/[id]` now unwraps `params` with React's `use()` instead of `await`
+  (client components cannot be async).
+
+Gates after fix: typecheck 0 · lint 0 · test 0 (12 passed, 37 todo) ·
+build 0 (all 8 routes unchanged in the route table).

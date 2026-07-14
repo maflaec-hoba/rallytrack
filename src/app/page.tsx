@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -8,29 +10,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  HOME_QUICK_LINKS,
+  getHomeEntry,
+  type ActiveTourSummary,
+} from "@/lib/home";
 
-// Home screen (T3 / INS-8): the FR-1.1 entry point for starting / continuing
-// a tour — UI entry only, the tour lifecycle logic lands with T5 (INS-12).
-
-const QUICK_LINKS = [
-  {
-    href: "/tours",
-    label: "Túratörténet",
-    description: "Lezárt túrák listája",
-  },
-  {
-    href: "/profiles",
-    label: "Autóprofilok",
-    description: "Kalibráció autónként",
-  },
-  {
-    href: "/settings",
-    label: "Beállítások",
-    description: "Tárhely és app-infó",
-  },
-];
+// Home screen (T3 / INS-8): the FR-1.1 entry point — start a new tour, or
+// continue the active one. UI entry only; getHomeEntry decides the variant.
 
 export default function Home() {
+  // TODO(T5/INS-12): read the persisted active tour from the tour provider /
+  // storage here. Until the tour lifecycle lands, there is never an active
+  // tour, so the home screen always offers starting one.
+  const activeTour: ActiveTourSummary | null = null;
+  const entry = getHomeEntry(activeTour);
+
   return (
     <div className="flex flex-col gap-6 py-6">
       <header className="flex flex-col gap-1">
@@ -44,24 +39,24 @@ export default function Home() {
       <Card className="rounded-2xl border border-zinc-200 bg-white shadow-sm ring-0">
         <CardHeader>
           <CardTitle className="text-base font-semibold text-zinc-900">
-            Nincs aktív túra
+            {entry.title}
           </CardTitle>
           <CardDescription className="text-sm text-zinc-500">
-            Indíts új túrát — az aktív túra ide tér vissza folytatásra.
+            {entry.description}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Button
             className="h-14 w-full rounded-full bg-orange-500 text-base font-semibold text-white hover:bg-orange-600"
-            render={<Link href="/tour" />}
+            render={<Link href={entry.ctaHref} />}
           >
-            Túra indítása
+            {entry.ctaLabel}
           </Button>
         </CardContent>
       </Card>
 
       <nav aria-label="Gyorslinkek" className="flex flex-col gap-3">
-        {QUICK_LINKS.map((link) => (
+        {HOME_QUICK_LINKS.map((link) => (
           <Link
             key={link.href}
             href={link.href}
