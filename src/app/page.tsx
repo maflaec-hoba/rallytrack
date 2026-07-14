@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,17 +14,35 @@ import {
 import {
   HOME_QUICK_LINKS,
   getHomeEntry,
+  toActiveTourSummary,
   type ActiveTourSummary,
 } from "@/lib/home";
+import { getActiveTour } from "@/services/db";
 
 // Home screen (T3 / INS-8): the FR-1.1 entry point — start a new tour, or
-// continue the active one. UI entry only; getHomeEntry decides the variant.
+// continue the active one. Reads the persisted active tour from the
+// repository (read-only); starting/closing tours is T5 / INS-12.
 
 export default function Home() {
-  // TODO(T5/INS-12): read the persisted active tour from the tour provider /
-  // storage here. Until the tour lifecycle lands, there is never an active
-  // tour, so the home screen always offers starting one.
-  const activeTour: ActiveTourSummary | null = null;
+  // Until the repository read resolves, the start variant shows briefly.
+  const [activeTour, setActiveTour] = useState<ActiveTourSummary | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    // TODO(T5/INS-12): replace this one-shot read with the tour provider's
+    // live state once the tour lifecycle lands.
+    getActiveTour()
+      .then((tour) => {
+        if (!cancelled) setActiveTour(toActiveTourSummary(tour));
+      })
+      .catch(() => {
+        // Unreadable storage degrades to the start variant (NFR-3).
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const entry = getHomeEntry(activeTour);
 
   return (

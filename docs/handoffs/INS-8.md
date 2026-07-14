@@ -72,3 +72,34 @@ Reviewer verdict: REQUEST CHANGES (3 findings). All three accepted.
 
 Gates after fix: typecheck 0 · lint 0 · test 0 (12 passed, 37 todo) ·
 build 0 (all 8 routes unchanged in the route table).
+
+## Fix round 2
+
+Reviewer verdict: REQUEST CHANGES (1 new MAJOR). Accepted.
+
+- **MAJOR (accepted)** — the active-tour source was hard-coded to `null`, so
+  the continue variant was unreachable at runtime. Fixed by wiring the home
+  screen to the real repository merged from INS-7 (`origin/milestone/m1-alapok`
+  merged into this branch first, merge commit 6586bdc):
+  - `src/services/db.ts` — added the smallest read-only query
+    `getActiveTour(): Promise<Tour | undefined>`: follows the `activeTourId`
+    setting via `getSetting` + `getTour` and returns the tour only while its
+    status is `active` (stale pointer at a closed/missing tour → undefined).
+    db.ts previously had no single active-tour lookup, so this was added per
+    the fix-round guidance; 4 new fake-indexeddb tests in
+    `src/services/db.test.ts` (written first, red → green). No writes added.
+  - `src/lib/home.ts` — added pure mapper
+    `toActiveTourSummary(tour: Tour | null | undefined): ActiveTourSummary | null`
+    (only `status === "active"` maps; defense in depth over the repository);
+    4 new unit tests in `src/lib/home.test.ts`, incl. the end-to-end
+    stored-tour → continue-entry composition with `getHomeEntry`.
+  - `src/app/page.tsx` — reads the active tour on mount
+    (`useEffect`/`useState`, cancellation-guarded, read-only) and renders
+    `getHomeEntry(toActiveTourSummary(...))`. While the read resolves — or if
+    storage is unreadable (NFR-3) — the start variant shows, per guidance.
+    Tour lifecycle (writing `activeTourId`, starting/closing tours) remains
+    T5/INS-12; the `TODO(T5/INS-12)` marker now sits on the one-shot read to
+    be replaced by the tour provider's live state.
+
+Gates after fix round 2: typecheck 0 · lint 0 · test 0 (40 passed, 37 todo —
+includes INS-7's merged db suite) · build 0 (route table unchanged).

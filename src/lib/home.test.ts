@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import type { Tour } from "./types";
 import {
   HOME_QUICK_LINKS,
   getHomeEntry,
+  toActiveTourSummary,
   type ActiveTourSummary,
 } from "./home";
 
@@ -37,6 +39,43 @@ describe("getHomeEntry", () => {
   it("never yields a continue entry without an active tour and vice versa", () => {
     expect(getHomeEntry(null).mode).not.toBe("continue");
     expect(getHomeEntry(activeTour).mode).not.toBe("start");
+  });
+});
+
+describe("toActiveTourSummary", () => {
+  const storedTour: Tour = {
+    id: "01HTEST",
+    status: "active",
+    name: "Túra 2026-07-14 09:30",
+    startedAt: Date.UTC(2026, 6, 14, 7, 30),
+    endedAt: null,
+    totals: { gpsMeters: 0, calibratedMeters: 0, durationMs: 0, avgKmh: 0 },
+    calibration: { profileId: null, profileName: null, factor: 1 },
+  };
+
+  it("maps a stored active tour to the home entry input", () => {
+    expect(toActiveTourSummary(storedTour)).toEqual({
+      id: "01HTEST",
+      name: "Túra 2026-07-14 09:30",
+      startedAt: Date.UTC(2026, 6, 14, 7, 30),
+    });
+  });
+
+  it("maps a missing tour to null", () => {
+    expect(toActiveTourSummary(undefined)).toBeNull();
+    expect(toActiveTourSummary(null)).toBeNull();
+  });
+
+  it("maps a closed tour to null (defense in depth over the repository)", () => {
+    expect(
+      toActiveTourSummary({ ...storedTour, status: "closed", endedAt: 1 }),
+    ).toBeNull();
+  });
+
+  it("feeds getHomeEntry end to end: stored active tour -> continue entry", () => {
+    const entry = getHomeEntry(toActiveTourSummary(storedTour));
+    expect(entry.mode).toBe("continue");
+    expect(entry.title).toBe("Túra 2026-07-14 09:30");
   });
 });
 
