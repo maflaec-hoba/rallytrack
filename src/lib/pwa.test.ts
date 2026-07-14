@@ -379,6 +379,30 @@ describe("PwaRegister setup (FR-8.2, FR-8.3)", () => {
     expect(cachesStub.log.filter((entry) => entry.op === "add")).toEqual([]);
   });
 
+  it("registers the SW and warms the cache even when persist() never settles", async () => {
+    // Registration and the best-effort persistence request must be
+    // independent: a hanging browser promise must not block offline setup.
+    const { env, cachesStub, register } = createEnv();
+    env.navigator.storage = { persist: () => new Promise<boolean>(() => {}) };
+    const asset = `${ORIGIN}/_next/static/chunks/page-abc.js`;
+    env.performance = { getEntriesByType: () => [{ name: asset }] };
+    await setupPwa(env);
+    expect(register).toHaveBeenCalledTimes(1);
+    const store = cachesStub.stores.get(loadServiceWorker().api.CACHE_NAME);
+    expect(store?.has(asset)).toBe(true);
+  }, 1000);
+
+  it("still registers the SW when persist() rejects", async () => {
+    const { env, register } = createEnv();
+    env.navigator.storage = {
+      persist: vi.fn(async () => {
+        throw new Error("denied");
+      }),
+    };
+    await expect(setupPwa(env)).resolves.toBeUndefined();
+    expect(register).toHaveBeenCalledTimes(1);
+  });
+
   it("degrades without throwing when service workers are unsupported, still requesting persistence (NFR-3)", async () => {
     const { env, persist } = createEnv();
     env.navigator = { storage: { persist } };

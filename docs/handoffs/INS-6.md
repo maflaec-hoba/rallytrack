@@ -117,6 +117,32 @@
 - **Gates after fix:** typecheck exit 0 · lint exit 0 · test exit 0
   (21 passed, 37 todo) · build exit 0.
 
+## Fix round 2
+
+- **Finding (MAJOR, re-review):** the round-1 refactor made `setupPwa`
+  await the best-effort `storage.persist()` BEFORE registering the service
+  worker — a slow or never-settling persist promise would block `/sw.js`
+  registration and thus offline startup. Before round 1 the two started
+  independently.
+- **Decision: ACCEPTED.** Real regression introduced by the round-1
+  serialization; the tests asserted both calls happen but not their
+  independence.
+- **What changed (TDD — failing test first):**
+  - New test: `persist()` returns a never-settling promise → `setupPwa`
+    still resolves, `/sw.js` registration and cache warm-up still happen
+    (failed with a timeout against the round-1 code, green after the fix).
+  - New test: `persist()` rejecting does not prevent registration and
+    `setupPwa` resolves.
+  - `src/components/pwa-register.tsx`: `persist()` is now fire-and-forget —
+    invoked synchronously with its own `.catch()` (plus a try/catch for a
+    synchronously-throwing implementation), never awaited; SW registration
+    proceeds independently. This restores the pre-round-1 concurrency while
+    keeping the round-1 testability.
+- **Branch sync:** merged `origin/milestone/m1-alapok` (INS-7 data layer,
+  `0ee9fc8`) — clean merge, no conflicts; full suite green post-merge.
+- **Gates after fix:** typecheck exit 0 · lint exit 0 · test exit 0
+  (43 passed, 37 todo) · build exit 0.
+
 ## How to verify
 
 - `npm run typecheck && npm run lint && npm run test && npm run build`

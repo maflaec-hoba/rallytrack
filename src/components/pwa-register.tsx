@@ -62,14 +62,15 @@ async function warmRuntimeCache(env: PwaEnv): Promise<void> {
 }
 
 export async function setupPwa(env: PwaEnv): Promise<void> {
-  if (env.navigator.storage?.persist) {
-    try {
-      // Best-effort: browsers may deny silently; data still lives in
-      // IndexedDB either way (FR-8.3).
-      await env.navigator.storage.persist();
-    } catch {
-      // Ignore — persistence stays "best effort".
-    }
+  // Fire-and-forget, deliberately NOT awaited: a slow (or never-settling)
+  // persistence prompt must not delay or block service worker registration.
+  // Best-effort either way — browsers may deny silently; data still lives
+  // in IndexedDB (FR-8.3).
+  try {
+    env.navigator.storage?.persist?.()?.catch(() => {});
+  } catch {
+    // Ignore — persistence stays "best effort" even if persist() throws
+    // synchronously.
   }
   if (!env.navigator.serviceWorker) return;
   try {
