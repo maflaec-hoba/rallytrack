@@ -8,6 +8,7 @@ import {
   createPointBatcher,
   deleteProfile,
   deleteTour,
+  getActiveTour,
   getPoints,
   getProfile,
   getSetting,
@@ -365,6 +366,33 @@ describe("batched point writes (NFR-1: 20 points / 5 s)", () => {
     batcher.add(makePoint("t9", 1));
     await batcher.flush();
     expect(await getPoints("t9")).toEqual([makePoint("t9", 1)]);
+  });
+});
+
+describe("active tour query (T3 / INS-8, read-only)", () => {
+  it("returns undefined when no active tour id is stored", async () => {
+    expect(await getActiveTour()).toBeUndefined();
+  });
+
+  it("returns the tour the activeTourId setting points at", async () => {
+    const tour = makeTour();
+    await putTour(tour);
+    await setSetting("activeTourId", tour.id);
+    expect(await getActiveTour()).toEqual(tour);
+  });
+
+  it("returns undefined when the setting is null or the tour is missing", async () => {
+    await setSetting("activeTourId", null);
+    expect(await getActiveTour()).toBeUndefined();
+    await setSetting("activeTourId", "gone");
+    expect(await getActiveTour()).toBeUndefined();
+  });
+
+  it("returns undefined for a stale pointer at a closed tour", async () => {
+    const closed = makeTour({ status: "closed", endedAt: 1_752_481_800_000 });
+    await putTour(closed);
+    await setSetting("activeTourId", closed.id);
+    expect(await getActiveTour()).toBeUndefined();
   });
 });
 
