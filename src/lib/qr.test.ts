@@ -16,6 +16,10 @@ import {
   TINY,
   V7,
   V7_TEXT,
+  V8,
+  V8_TEXT,
+  V9,
+  V9_TEXT,
   V10,
   V10_TEXT,
   type QrVector,
@@ -110,6 +114,14 @@ describe("encodeQr — full matrices against reference vectors", () => {
 
   it("encodes a 113-byte URL identically to the reference (v7-M: version info + 3-position alignment grid)", () => {
     expectMatchesVector(V7_TEXT, V7);
+  });
+
+  it("encodes a 133-byte URL identically to the reference (v8-M: unequal RS blocks 2x38 + 2x39)", () => {
+    expectMatchesVector(V8_TEXT, V8);
+  });
+
+  it("encodes a 166-byte URL identically to the reference (v9-M: unequal RS blocks 3x36 + 2x37)", () => {
+    expectMatchesVector(V9_TEXT, V9);
   });
 
   it("encodes a 199-byte URL identically to the reference (v10-M: unequal RS blocks + 16-bit length field)", () => {

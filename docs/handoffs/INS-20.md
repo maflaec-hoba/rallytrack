@@ -64,3 +64,15 @@ Independent review (PR #9) returned REQUEST CHANGES with two findings. Both **ac
 
 ### Gates after fixes
 - typecheck: exit 0 · lint: exit 0 · test: exit 0 (122 passed, 37 todo) · build: exit 0
+
+## Fix round 2
+
+Re-review returned one MAJOR. **Accepted.**
+
+### MAJOR — v8/v9 matrices unvalidated in the committed suite — ACCEPTED
+The v8/v9 jsqr round-trip ran only in the dev-time scratch environment; the committed suite checked version *selection* for v8/v9 but never their matrices, so a wrong RS block distribution with the same total capacity could have slipped through.
+- `src/lib/qr.test-vectors.ts`: appended `V8`/`V8_TEXT` (133-byte URL → v8-M, unequal RS blocks 2×38 + 2×39) and `V9`/`V9_TEXT` (166-byte URL → v9-M, 3×36 + 2×37) — same provenance as all other fixtures (dev-time output of `qrcode@1.5.4`, byte mode forced, EC level M; generator stays out of `package.json`, C4), noted in the fixture comment.
+- `src/lib/qr.test.ts`: byte-identical full-matrix comparison tests for v8 and v9 added. They passed against the encoder on first run (encoder was already correct — the gap was committed regression protection, which now covers every version on the 1–10 path except v-selection-only gaps: v1, v3, v5, v7, v8, v9, v10 all have matrix fixtures).
+
+### Gates after fix round 2
+- typecheck: exit 0 · lint: exit 0 · test: exit 0 (124 passed, 37 todo) · build: exit 0
