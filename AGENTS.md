@@ -49,11 +49,13 @@ Starter for a small website built with AI-assisted development
     and have clear acceptance criteria; if not, stop and ask instead of
     guessing. The moment you start working on an issue, move it to
     **In Progress**.
-11. Agentic operation runs per `docs/agentic-workflow.md`: only the
-    orchestrator touches Linear and merges task PRs; makers implement in
-    isolated worktrees and write a handoff file
-    (`docs/handoff/<ISSUE-ID>.md`); the reviewer (Codex) reviews handoff +
-    task + diff; max 2 fix rounds, then human escalation.
+11. Agentic operation runs per `docs/agentic-workflow.md` (the repo-specific
+    binding of `docs/agentic-operating-model.md`, whose invariants apply in
+    full): only a human moves issues to Todo; only the orchestrator touches
+    Linear and merges task PRs; makers implement in isolated worktrees and
+    write a handoff file (`docs/handoffs/<ISSUE-ID>.md`); the reviewer
+    (Codex, fresh context) reviews handoff + task + diff; max 2 fix rounds,
+    then human escalation via the `agent:needs-human` label.
 
 > This file grows during the workshop — every recurring correction you give
 > the agent belongs here as a rule.

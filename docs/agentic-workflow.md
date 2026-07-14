@@ -1,8 +1,14 @@
 # Agentic delivery workflow (orchestrator – maker – reviewer)
 
 How tasks flow from Linear to merged code with no human in the inner loop.
-Complements the AGENTS.md rules (esp. 5–10) and `docs/review-checklist.md`;
-where this document is silent, those rules apply unchanged.
+This is the repo-specific binding of the portable operating model in
+`docs/agentic-operating-model.md` — its invariants (human gate at entry and
+escalation, no self-approval, main stays green, evidence for every step,
+bounded autonomy) apply in full. Where the two differ (merge flow, reviewer
+harness, severity labels, Linear state mapping) AGENTS.md and this document
+win. Complements the AGENTS.md rules (esp. 5–11) and
+`docs/review-checklist.md`; where this document is silent, those apply
+unchanged.
 
 ## Roles
 
@@ -19,17 +25,53 @@ never merge, and never talk to each other directly.
 
 ## Task intake (orchestrator)
 
+0. **Only a human moves an issue Backlog → Todo.** Todo is the entry gate of
+   the autonomous pipeline (operating-model invariant 1); the orchestrator
+   never promotes from Backlog.
 1. Eligible task = Linear issue that is **Todo**, belongs to the current
-   milestone, and has **no unfinished prerequisite** (Linear "blocked by"
+   milestone, has **no unfinished prerequisite** (Linear "blocked by"
    relations and the `Depends on:` lines of `docs/spec/tasks.md` — both must
    be clear; prerequisites count as finished when their PR is merged into the
-   milestone branch and the issue is Done).
+   milestone branch and the issue is Done), carries **no `agent:needs-human`
+   label**, and has no live maker already assigned. Order: priority
+   descending, then creation time ascending.
 2. Before dispatch the orchestrator verifies the issue is properly specified
    per AGENTS.md rule 10 (traces to FR/GWT IDs, clear "done when"). If not:
    comment on the issue with what is missing, leave it in Todo, escalate to
    the human, and pick the next eligible task.
 3. On dispatch: move the issue to **In Progress** and comment which agent run
    picked it up.
+
+## Linear state mapping (operating model §3, option B)
+
+The Insiron team has no dedicated In Review / Changes Requested / Blocked
+states, so sub-states live in labels on top of Todo / In Progress / Done:
+
+| Pipeline state | Linear state | Label |
+|---|---|---|
+| maker working | In Progress | — |
+| under review | In Progress | `agent:in-review` |
+| bounced, maker fixing | In Progress | `agent:changes-requested` |
+| escalated to human | Todo | `agent:needs-human` |
+| merged | Done | — |
+
+The orchestrator is the only writer of these states and labels; a human
+clears `agent:needs-human` after resolving the escalation, which makes the
+issue eligible again.
+
+## Configuration (defaults from operating model §5)
+
+| Parameter | Value | Meaning |
+|---|---|---|
+| `MAX_MAKERS` | 3 | concurrent maker subagents |
+| `BOUNCE_LIMIT` | 2 | fix rounds before human escalation |
+| `AGENT_TIMEOUT` | 20 min | max runtime of one maker/reviewer run |
+| `PER_RUN_TASK_CAP` | 10 | max tasks one orchestrator run processes |
+| `RETRY` | 1 | crash/timeout → back to Todo once, then `agent:needs-human` |
+
+A run drains the eligible queue, then stops and reports (drain-then-stop);
+continuous operation = periodically restarting the orchestrator when new
+Todo work appears.
 
 ## Parallelism
 
@@ -47,7 +89,8 @@ never merge, and never talk to each other directly.
 ## Maker protocol
 
 Input: the Linear issue (full description), pointers to the spec package,
-AGENTS.md, DESIGN-GUIDELINE.md. Steps:
+AGENTS.md, DESIGN-GUIDELINE.md — the maker prompt template of the operating
+model (§6) applies, adapted to this repo's paths and PR flow. Steps:
 
 1. **Validate before building.** Re-check the task is implementable as
    specified (spec/GWT references resolve, acceptance criteria are testable,
@@ -64,8 +107,11 @@ AGENTS.md, DESIGN-GUIDELINE.md. Steps:
 
 ## Handoff file
 
-Path: `docs/handoff/<ISSUE-ID>.md` (e.g. `docs/handoff/INS-6.md`), committed
-on the task branch so the reviewer reads it from the diff. Contents:
+Path: `docs/handoffs/<ISSUE-ID>.md` (e.g. `docs/handoffs/INS-6.md`),
+committed on the task branch so the reviewer reads it from the diff. Use the
+operating model's template (§8: files changed, per-AC status table, gate
+exit codes, decisions, risks, how to verify) extended with this repo's spec
+traceability:
 
 ```markdown
 # Handoff — <ISSUE-ID> <title>
@@ -84,20 +130,25 @@ changed; the handoff is the running log of the task, not a snapshot.
 
 ## Review protocol
 
-The orchestrator moves the issue to **In Review** and invokes Codex per
-`docs/review-checklist.md`, providing: the handoff file, the Linear issue
+The orchestrator sets the `agent:in-review` label and invokes Codex per
+`docs/review-checklist.md` — a fresh, adversarial context with no maker
+memory (operating model §7), providing: the handoff file, the Linear issue
 text, and the diff range. The reviewer returns findings
-(`[BLOCKER|MAJOR|MINOR] file:line — …`) and a verdict.
+(`[BLOCKER|MAJOR|MINOR] file:line — …`) and a verdict. Severity maps to the
+operating model's taxonomy: BLOCKER = Critical, MAJOR = Serious,
+MINOR = Minor; APPROVE = PASS.
 
-- **BLOCKER or MAJOR** → verdict is REQUEST CHANGES: issue goes back to
-  **In Progress**, the same maker (same worktree) fixes; every finding is
-  marked accepted/rejected in the PR (rule 9); Codex re-reviews the fix.
+- **BLOCKER or MAJOR** → verdict is REQUEST CHANGES: label flips to
+  `agent:changes-requested`, the same maker (same worktree) fixes; every
+  finding is marked accepted/rejected in the PR (rule 9); Codex re-reviews
+  the fix.
 - **MINOR only** → verdict may be APPROVE-with-minors: the maker fixes the
   minors before merge, gates re-run, but no new full review round is
   spawned; the orchestrator spot-checks that each minor was addressed.
-- **Fix-round limit: 2.** If the third review is still REQUEST CHANGES, the
-  orchestrator stops the task: Linear comment summarizing the disagreement,
-  issue back to Todo with a `needs-human` label, escalate. No fourth round.
+- **Fix-round limit: 2** (`BOUNCE_LIMIT`). If the third review is still
+  REQUEST CHANGES, the orchestrator stops the task: Linear comment
+  summarizing the disagreement, issue back to Todo with the
+  `agent:needs-human` label, escalate. No fourth round.
 
 ## Merge policy
 
@@ -113,8 +164,10 @@ text, and the diff range. The reviewer returns findings
 The orchestrator stops work on a task — never silently drops it — and pings
 the human with a Linear comment when:
 
-- the task is under-specified (intake step 2 or maker validation),
+- the task is under-specified (intake step 2 or maker validation returning
+  NOT_DEVELOPABLE),
 - the fix-round limit is exhausted,
+- a maker crashes or times out more than once on the same task (`RETRY`),
 - gates or CI cannot be brought green for reasons outside the task's scope
   (broken main, infra failure),
 - a post-deploy runtime-error cluster blocks feature work (rule 7),
