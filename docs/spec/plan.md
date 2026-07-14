@@ -152,6 +152,25 @@ JSONB); idempotency via client-generated ulid primary keys and upsert
 var until accounts are ever in scope. Dependency added only when this task
 starts.
 
+## Branching & delivery
+
+`main` is protected (PR + green CI `checks` required) and auto-deploys to
+production. Milestones are integrated and tested in isolation on their own
+branches, each with a stable Vercel preview URL:
+
+| Milestone | Branch | Preview URL |
+|---|---|---|
+| M1 | `milestone/m1-alapok` | `rallytrack-git-milestone-m1-alapok-insiron.vercel.app` |
+| M2 | `milestone/m2-turakovetes` | `rallytrack-git-milestone-m2-turakovetes-insiron.vercel.app` |
+| M3 | `milestone/m3-rally-muszerek` | `rallytrack-git-milestone-m3-rally-muszerek-insiron.vercel.app` |
+| M4 | `milestone/m4-itiner-export` | `rallytrack-git-milestone-m4-itiner-export-insiron.vercel.app` |
+| M5 | `milestone/m5-szinkron` | `rallytrack-git-milestone-m5-szinkron-insiron.vercel.app` |
+
+Flow: milestone branch is cut from `main` when the milestone starts (after
+the previous one merged) → task branches (Linear-suggested names) PR into
+the milestone branch (CI + independent review) → when the milestone is
+complete and human-approved, milestone → `main` PR ships it to production.
+
 ## Testing strategy
 
 TDD, anchored to the spec: every unit/component GWT scenario is scaffolded

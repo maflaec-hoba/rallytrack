@@ -29,6 +29,15 @@ Starter for a small website built with AI-assisted development
 7. After every production deploy, scan runtime errors via the Vercel MCP
    (`get_runtime_errors`, last 24h) and report the result. New error clusters
    after a deploy block further feature work until triaged.
+8. Branching. `main` is protected: it only changes via PR with the CI
+   `checks` gate green, and it auto-deploys to production. Each milestone
+   lives on its own branch (`milestone/m1-alapok`, `milestone/m2-turakovetes`,
+   `milestone/m3-rally-muszerek`, `milestone/m4-itiner-export`,
+   `milestone/m5-szinkron`), cut from `main` when the milestone starts — its
+   Vercel preview URL is where the milestone is viewed and tested in
+   isolation. Every task gets its own branch (use the name Linear suggests)
+   and merges into its milestone branch via PR: green CI + independent-review
+   findings resolved. Milestone → `main` merge requires human approval.
 
 > This file grows during the workshop — every recurring correction you give
 > the agent belongs here as a rule.
