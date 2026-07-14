@@ -26,6 +26,9 @@ Starter for a small website built with AI-assisted development
    task: convert that task's todos into real failing tests (red), then
    implement until green. Never implement first and backfill tests, and never
    delete or weaken a scaffolded scenario — scope changes go through the spec.
+7. After every production deploy, scan runtime errors via the Vercel MCP
+   (`get_runtime_errors`, last 24h) and report the result. New error clusters
+   after a deploy block further feature work until triaged.
 
 > This file grows during the workshop — every recurring correction you give
 > the agent belongs here as a rule.
