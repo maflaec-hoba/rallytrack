@@ -6,6 +6,8 @@ import { cn } from "./utils";
 // code they cover, as `*.test.ts`.
 describe("cn", () => {
   it("merges class names and drops falsy values", () => {
-    expect(cn("a", false && "b", "c")).toBe("a c");
+    // NEGATIVE PROBE (workshop module 2): deliberately wrong expectation —
+    // the test gate must fail on this line. Do not merge this branch.
+    expect(cn("a", false && "b", "c")).toBe("a b c");
   });
 });
