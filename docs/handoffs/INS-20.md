@@ -46,3 +46,21 @@
 - `npm run typecheck && npm run lint && npm run test && npm run build`
 - `npx next start -p 3111` → open `http://localhost:3111/install`: QR renders (scan it with a phone — it opens `/install` on the phone with that platform's section highlighted first with an orange border + badge), "Link másolása" copies and confirms in Hungarian.
 - GWT-40 manual (on the milestone preview URL): Android Chrome → "Telepítés" button shows the native prompt, app lands on the home screen; iOS Safari → follow the 4 steps, icon appears on the home screen.
+
+## Fix round 1
+
+Independent review (PR #9) returned REQUEST CHANGES with two findings. Both **accepted**.
+
+### MAJOR-1 — consumed `beforeinstallprompt` event could be re-prompted — ACCEPTED
+- `src/lib/install-prompt.ts` (NEW): pure state machine — a captured prompt event is single-use (`prompt-consumed` clears availability regardless of outcome); dismissal/failure sets an explicit `dismissed` state; a fresh `beforeinstallprompt` re-arms.
+- `src/lib/install-prompt.test.ts` (NEW, red-first): 7 tests incl. the reviewer's scenario (second click after dismissal impossible) and prompt() rejection.
+- `src/components/use-install-prompt.ts`: event moved to a ref and taken out *before* `prompt()` (re-entrant click can never reuse it), `prompt()`/`userChoice` wrapped in try/catch → `failed` outcome instead of an uncaught rejection (NFR-3); exposes `dismissed`.
+- `src/app/install/page.tsx`: after dismissal the Android section shows the honest Hungarian manual-install route (Chrome menu ⋮ → „Alkalmazás telepítése”) instead of a re-clickable button.
+
+### MAJOR-2 — over-capacity URL produced an endless skeleton — ACCEPTED
+- Encoder raised from version 6 (106 bytes) to version 10 (213 bytes): general alignment-pattern grid, version-information blocks (BCH 18,6) for v7+, unequal RS block interleaving, 16-bit byte-mode length field at v10. 213 bytes covers any realistic preview/custom hostname.
+- New reference fixtures (byte mode forced): 113-byte URL → v7-M and 199-byte URL → v10-M, byte-identical matrix comparison; boundary tests extended (107/122/123/152/153/180/181/213/214). Independent `jsqr` decode round-trip re-run for v7, v8, v9, v10 outputs — all decoded OK (v8/v9 exercise the same generic paths without fixtures).
+- `qrDisplayFor(url)` (NEW in `src/lib/qr.ts`, red-first tests): explicit `pending` / `ready` / `unavailable` display state; the page now renders an honest Hungarian message („A QR-kód ehhez a címhez nem érhető el — használd a lenti linket.”) with `role="status"` instead of the skeleton when over capacity — the copyable link keeps working.
+
+### Gates after fixes
+- typecheck: exit 0 · lint: exit 0 · test: exit 0 (122 passed, 37 todo) · build: exit 0

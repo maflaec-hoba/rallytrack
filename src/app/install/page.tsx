@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { useInstallPrompt } from "@/components/use-install-prompt";
 import { detectPlatform, selectInstallFlow } from "@/lib/platform";
-import { encodeQr, qrSvgPath, type QrMatrix } from "@/lib/qr";
+import { qrDisplayFor, qrSvgPath } from "@/lib/qr";
 
 // T15 / INS-20 — install-by-link page (FR-8.5, GWT-40): the app URL as a
 // locally generated QR code (constitution C1: no network) plus a copyable
@@ -64,7 +64,8 @@ export default function InstallPage() {
     () => "other" as const,
   );
   const [copyState, setCopyState] = useState<CopyState>("idle");
-  const { canInstall, installed, promptInstall } = useInstallPrompt();
+  const { canInstall, dismissed, installed, promptInstall } =
+    useInstallPrompt();
 
   useEffect(() => {
     if (copyState === "idle") return;
@@ -73,15 +74,9 @@ export default function InstallPage() {
   }, [copyState]);
 
   const flow = selectInstallFlow(platform);
-
-  let qr: QrMatrix | null = null;
-  if (installUrl) {
-    try {
-      qr = encodeQr(installUrl);
-    } catch {
-      // Longer than 106 bytes (exotic host) — the copyable link still works.
-    }
-  }
+  // pending (URL not yet known) | ready | unavailable (URL over capacity —
+  // shown as an explicit message, never an endless skeleton).
+  const qrDisplay = qrDisplayFor(installUrl);
 
   const sections = {
     android: (
@@ -94,6 +89,13 @@ export default function InstallPage() {
           <p className="text-sm font-medium text-emerald-600">
             Az app már telepítve van ezen a készüléken — nyisd meg a
             kezdőképernyőről.
+          </p>
+        ) : dismissed && !canInstall ? (
+          // The captured prompt event was consumed (dismissed or failed) —
+          // it cannot be prompted again, so no re-clickable button (MAJOR-1).
+          <p className="text-sm text-zinc-600">
+            A telepítési ablak bezárult. Az app továbbra is telepíthető a
+            Chrome menüjéből: <strong>⋮ → „Alkalmazás telepítése”</strong>.
           </p>
         ) : (
           <>
@@ -162,9 +164,9 @@ export default function InstallPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-4">
-          {qr ? (
+          {qrDisplay.status === "ready" ? (
             <svg
-              viewBox={`${-QUIET_ZONE} ${-QUIET_ZONE} ${qr.size + 2 * QUIET_ZONE} ${qr.size + 2 * QUIET_ZONE}`}
+              viewBox={`${-QUIET_ZONE} ${-QUIET_ZONE} ${qrDisplay.qr.size + 2 * QUIET_ZONE} ${qrDisplay.qr.size + 2 * QUIET_ZONE}`}
               className="h-auto w-full max-w-56"
               shapeRendering="crispEdges"
               role="img"
@@ -173,17 +175,27 @@ export default function InstallPage() {
               <rect
                 x={-QUIET_ZONE}
                 y={-QUIET_ZONE}
-                width={qr.size + 2 * QUIET_ZONE}
-                height={qr.size + 2 * QUIET_ZONE}
+                width={qrDisplay.qr.size + 2 * QUIET_ZONE}
+                height={qrDisplay.qr.size + 2 * QUIET_ZONE}
                 className="fill-white"
               />
-              <path d={qrSvgPath(qr)} className="fill-zinc-900" />
+              <path d={qrSvgPath(qrDisplay.qr)} className="fill-zinc-900" />
             </svg>
-          ) : (
+          ) : qrDisplay.status === "pending" ? (
             <div
               aria-hidden="true"
               className="aspect-square w-full max-w-56 animate-pulse rounded-2xl bg-zinc-100"
             />
+          ) : (
+            <div
+              role="status"
+              className="flex aspect-square w-full max-w-56 items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-50 p-4"
+            >
+              <p className="text-center text-sm text-zinc-600">
+                A QR-kód ehhez a címhez nem érhető el — használd a lenti
+                linket.
+              </p>
+            </div>
           )}
           <p className="w-full break-all text-center font-mono text-sm text-zinc-700">
             {installUrl ?? "…"}

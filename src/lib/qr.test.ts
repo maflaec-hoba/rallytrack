@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   QR_MAX_BYTES,
   encodeQr,
+  qrDisplayFor,
   qrSvgPath,
   rsEcCodewords,
 } from "@/lib/qr";
@@ -13,6 +14,10 @@ import {
   SHORT,
   SHORT_MASKED,
   TINY,
+  V7,
+  V7_TEXT,
+  V10,
+  V10_TEXT,
   type QrVector,
 } from "@/lib/qr.test-vectors";
 
@@ -57,6 +62,14 @@ describe("encodeQr — version selection (byte mode, EC level M)", () => {
     [84, 5],
     [85, 6],
     [106, 6],
+    [107, 7],
+    [122, 7],
+    [123, 8],
+    [152, 8],
+    [153, 9],
+    [180, 9],
+    [181, 10],
+    [213, 10],
   ];
 
   for (const [chars, version] of boundaries) {
@@ -66,7 +79,7 @@ describe("encodeQr — version selection (byte mode, EC level M)", () => {
   }
 
   it("rejects input longer than the supported capacity", () => {
-    expect(QR_MAX_BYTES).toBe(106);
+    expect(QR_MAX_BYTES).toBe(213);
     expect(() => encodeQr("a".repeat(QR_MAX_BYTES + 1))).toThrow();
   });
 
@@ -95,6 +108,14 @@ describe("encodeQr — full matrices against reference vectors", () => {
     expectMatchesVector(LONG_TEXT, LONG);
   });
 
+  it("encodes a 113-byte URL identically to the reference (v7-M: version info + 3-position alignment grid)", () => {
+    expectMatchesVector(V7_TEXT, V7);
+  });
+
+  it("encodes a 199-byte URL identically to the reference (v10-M: unequal RS blocks + 16-bit length field)", () => {
+    expectMatchesVector(V10_TEXT, V10);
+  });
+
   for (let mask = 0; mask < 8; mask++) {
     it(`applies forced mask ${mask} identically to the reference`, () => {
       expectMatchesVector(SHORT_TEXT, SHORT_MASKED[mask], mask);
@@ -113,6 +134,25 @@ describe("encodeQr — structural invariants", () => {
   it("has the always-dark module at (size - 8, 8)", () => {
     const qr = encodeQr(SHORT_TEXT);
     expect(qr.modules[qr.size - 8][8]).toBe(true);
+  });
+});
+
+describe("qrDisplayFor — honest QR display state (fix round 1, MAJOR-2)", () => {
+  it("is pending while the URL is not yet known on the client", () => {
+    expect(qrDisplayFor(null)).toEqual({ status: "pending" });
+  });
+
+  it("is ready with the encoded matrix for a normal install URL", () => {
+    const display = qrDisplayFor("https://rallytrack.vercel.app/install");
+    expect(display.status).toBe("ready");
+    if (display.status === "ready") {
+      expect(display.qr.size).toBe(17 + 4 * display.qr.version);
+    }
+  });
+
+  it("degrades to an explicit unavailable state beyond capacity instead of an endless skeleton", () => {
+    const oversized = `https://example.com/install?x=${"a".repeat(QR_MAX_BYTES)}`;
+    expect(qrDisplayFor(oversized)).toEqual({ status: "unavailable" });
   });
 });
 
