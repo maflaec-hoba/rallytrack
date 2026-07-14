@@ -78,6 +78,45 @@
 - Root layout was touched (2-line diff) — trivial merge conflict possible
   with the parallel layout-editing task.
 
+## Fix round 1
+
+- **Finding (MAJOR, reviewer):** `src/lib/pwa.test.ts` never executed the
+  service worker's install/fetch/activate behavior or the registration
+  component — `precacheAppShell()` could be a no-op, `networkFirst()` could
+  always return `Response.error()`, and `<PwaRegister />` could stop
+  registering / requesting persistence with all tests still green.
+- **Decision: ACCEPTED.** The original suite only pinned static shape
+  (constants, listener registration, the pure routing function).
+- **What changed (TDD — strengthened tests written red-first):**
+  - `src/lib/pwa.test.ts` rewritten: hand-rolled stubs (in-memory
+    CacheStorage with write log, StubRequest/StubResponse, fetch spy) are
+    injected into the shipped `public/sw.js` source via
+    `new Function("self","caches","fetch","Request","Response", src)`. The
+    tests now DISPATCH events against the real handlers: install → APP_SHELL
+    precached into the versioned cache with `cache: "reload"` requests +
+    `skipWaiting`; activate → stale `rallytrack-*` caches deleted, current
+    and foreign kept, `clients.claim` called; fetch → cache-first hit
+    (network untouched) and miss (fetched + stored), navigation online
+    (network + cached), offline fallback to the cached page and to the
+    precached shell root (GWT-34 plausibility), non-GET/cross-origin/API
+    requests not intercepted. 20 tests in the file (9 before).
+  - `src/components/pwa-register.tsx` refactored: the effect logic is now an
+    exported `setupPwa(env: PwaEnv)` with injected
+    `navigator/caches/performance/origin` (component stays a thin mount
+    hook — runtime behavior unchanged). Tests execute it: registers
+    `/sw.js` with `{scope:"/", updateViaCache:"none"}`, requests
+    `navigator.storage.persist()`, warms the SW cache with same-origin
+    `/_next/static/*` resources only, skips already-cached assets, degrades
+    without throwing when SW is unsupported or registration rejects. The
+    warm-up cache name is asserted equal to the `CACHE_NAME` extracted from
+    `sw.js` (drift guard).
+  - **Mutation spot-checks** (each mutation applied, suite run, reverted):
+    precache no-op → 2 tests fail; `networkFirst` → `Response.error()` →
+    3 fail; registration call removed → 1 fails; `persist()` call removed →
+    2 fail. Restored code: 20/20 green.
+- **Gates after fix:** typecheck exit 0 · lint exit 0 · test exit 0
+  (21 passed, 37 todo) · build exit 0.
+
 ## How to verify
 
 - `npm run typecheck && npm run lint && npm run test && npm run build`
