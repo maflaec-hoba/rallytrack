@@ -154,6 +154,13 @@ starts.
 
 ## Testing strategy
 
+TDD, anchored to the spec: every unit/component GWT scenario is scaffolded
+as an `it.todo` entry colocated with its future module (`src/lib/*.test.ts`,
+component scenarios temporarily pooled in `src/components/scenarios.test.ts`).
+Starting a task means turning its todos into failing tests first (red), then
+implementing until green (AGENTS.md rule 6). `vitest run` lists the todos, so
+remaining spec coverage is always visible in the test output.
+
 - **Unit (Vitest, `src/lib/**/*.test.ts`)** — every unit-tagged GWT
   scenario; clock and randomness injected as parameters.
 - **Component (Vitest + @testing-library/react, jsdom)** — the
