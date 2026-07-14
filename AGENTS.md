@@ -43,6 +43,12 @@ Starter for a small website built with AI-assisted development
    findings and a verdict (APPROVE / REQUEST CHANGES) — never code changes;
    fixes are the maker's, and each finding is marked accepted or rejected in
    the PR before merging.
+10. Task intake from Linear. Only pick up issues that are in **Todo** status
+    and have no blocking (unfinished) prerequisites. Before starting, verify
+    the issue is properly specified — it must trace to the spec (FR/GWT IDs)
+    and have clear acceptance criteria; if not, stop and ask instead of
+    guessing. The moment you start working on an issue, move it to
+    **In Progress**.
 
 > This file grows during the workshop — every recurring correction you give
 > the agent belongs here as a rule.
