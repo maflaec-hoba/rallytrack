@@ -87,6 +87,20 @@ export async function deleteTour(id: string): Promise<void> {
   await tx.done;
 }
 
+/**
+ * Read-only lookup of the currently active tour: follows the
+ * `activeTourId` setting and returns the tour only while it is still
+ * `active` (a stale pointer at a closed/deleted tour yields undefined).
+ * Added for the home screen's start/continue entry (T3 / INS-8, FR-1.1);
+ * writing the pointer is the tour lifecycle's job (T5 / INS-12).
+ */
+export async function getActiveTour(): Promise<Tour | undefined> {
+  const activeTourId = await getSetting("activeTourId");
+  if (activeTourId === undefined || activeTourId === null) return undefined;
+  const tour = await getTour(activeTourId);
+  return tour?.status === "active" ? tour : undefined;
+}
+
 // --- points ----------------------------------------------------------------
 
 /** Write a batch of points in a single transaction (NFR-1). */
